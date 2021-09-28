@@ -52,9 +52,10 @@ namespace twentyOne
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution<int> distribution(1, 6);
+        int roll = distribution(gen);
     	
-        std::cout << "Player " << rollPacket.playerNumber <<
-            " rolled a " << distribution(gen) << " !" << '\n';
+        std::cout << "Player " << rollPacket.playerNumber + 1 <<
+            " rolled a " << roll << " !" << '\n';
 
         if (phase_ != TwentyOnePhase::GAME)
             return;
@@ -80,6 +81,7 @@ namespace twentyOne
         for(auto& socket: sockets_)
         {
             sf::Packet sentPacket;
+            newRollPacket.roll = roll;
             sentPacket << newRollPacket;
             sf::Socket::Status sentStatus;
             do

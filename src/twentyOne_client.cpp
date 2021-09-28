@@ -54,7 +54,7 @@ namespace twentyOne
                 break;
             RollPacket rollPacket{};
             packet >> rollPacket;
-            std::cout << "Receive roll packet from player " <<
+            std::cout << "Received roll packet from player " <<
                 rollPacket.playerNumber + 1 << ". They rolled a " << rollPacket.roll << " !" << '\n';
             break;
         }
@@ -126,8 +126,9 @@ namespace twentyOne
 
     void TwentyOneClient::SendNewRoll()
     {
-        RollPacket rollPacket{};
+        RollPacket rollPacket;
         rollPacket.packetType = PacketType::ROLL_DIE;
+        rollPacket.roll = 0;
         rollPacket.playerNumber = playerNumber_;
         sf::Packet packet;
         packet << rollPacket;
@@ -205,7 +206,7 @@ namespace twentyOne
         {
             const auto playerNumber = client_.GetPlayerNumber();
             ImGui::Begin("Client");
-            ImGui::Text("You are player %d", playerNumber);
+            ImGui::Text("You are player %d", playerNumber+1);
         	if(ImGui::Button("Roll die"))
         	{
                 client_.SendNewRoll();

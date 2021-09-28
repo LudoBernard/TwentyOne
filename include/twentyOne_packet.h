@@ -61,7 +61,7 @@ namespace twentyOne
 
     inline sf::Packet& operator >>(sf::Packet& packet, RollPacket& rollPacket)
     {
-        return packet >> rollPacket.playerNumber;
+        return packet >> rollPacket.playerNumber >> rollPacket.roll;
     }
 
     enum class EndType : unsigned char
