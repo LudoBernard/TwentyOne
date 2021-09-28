@@ -4,30 +4,28 @@
 #include <SFML/Network/SocketSelector.hpp>
 #include <SFML/Network/TcpListener.hpp>
 #include <SFML/Network/TcpSocket.hpp>
-#include <morpion_settings.h>
+#include <twentyOne_settings.h>
 
-#include "morpion_packet.h"
+#include "twentyOne_packet.h"
 
-namespace morpion
+namespace twentyOne
 {
 
-class MorpionServer
+class TwentyOneServer
 {
 public:
     int Run();
 private:
     std::array<sf::TcpSocket, maxClientNmb> sockets_;
-    std::array<Move, 9> moves_{};
     sf::SocketSelector selector_;
     sf::TcpListener listener_;
-    MorpionPhase phase_ = MorpionPhase::CONNECTION;
-    unsigned char currentMoveIndex_ = 0;
+    TwentyOnePhase phase_ = TwentyOnePhase::CONNECTION;
 
     void StartNewGame();
     void UpdateConnectionPhase();
     void ReceivePacket();
     PlayerNumber CheckWinner() const;
-    void ManageMovePacket(const MovePacket& movePacket);
+    void ManageRollPacket(const RollPacket& rollPacket);
 
     int GetNextSocket();
 };

@@ -1,15 +1,15 @@
 #pragma once
 
-#include <morpion_settings.h>
+#include <twentyOne_settings.h>
 #include <SFML/Network/Packet.hpp>
 #include <SFML/System/Vector2.hpp>
 
-namespace morpion
+namespace twentyOne
 {
     enum class PacketType : unsigned char
     {
         GAME_INIT,
-        MOVE,
+    	ROLL_DIE,
         END
     };
 
@@ -18,18 +18,18 @@ namespace morpion
         PacketType packetType;
     };
 
-    inline sf::Packet& operator <<(sf::Packet& packet, const Packet& morpionPacket)
+    inline sf::Packet& operator <<(sf::Packet& packet, const Packet& twentyOnePacket)
     {
-        const auto packetType = static_cast<unsigned char>(morpionPacket.packetType);
+        const auto packetType = static_cast<unsigned char>(twentyOnePacket.packetType);
         return packet << packetType;
     }
 
-    inline sf::Packet& operator >>(sf::Packet& packet, Packet& morpionPacket)
+    inline sf::Packet& operator >>(sf::Packet& packet, Packet& twentyOnePacket)
     {
         unsigned char packetType;
         packet >> packetType;
-        morpionPacket.packetType = static_cast<PacketType>(packetType);
-        return packet  ;
+        twentyOnePacket.packetType = static_cast<PacketType>(packetType);
+        return packet;
     }
 
     struct GameInitPacket : Packet
@@ -48,25 +48,20 @@ namespace morpion
         return packet >> gameInitPacket.playerNumber;
     }
 
-    struct MovePacket : Packet
+    struct RollPacket : Packet
     {
-        Move move;
+        PlayerNumber playerNumber;
+        int roll;
     };
 
-    inline sf::Packet& operator <<(sf::Packet& packet, const MovePacket& movePacket)
+    inline sf::Packet& operator <<(sf::Packet& packet, const RollPacket& rollPacket)
     {
-        return packet << static_cast<unsigned char>(movePacket.packetType)
-            << movePacket.move.position.x
-            << movePacket.move.position.y
-            << movePacket.move.playerNumber;
+        return packet << static_cast<unsigned char>(rollPacket.packetType) << rollPacket.playerNumber << rollPacket.roll;
     }
 
-    inline sf::Packet& operator >>(sf::Packet& packet, MovePacket& movePacket)
+    inline sf::Packet& operator >>(sf::Packet& packet, RollPacket& rollPacket)
     {
-        return packet
-            >> movePacket.move.position.x
-            >> movePacket.move.position.y
-            >> movePacket.move.playerNumber;
+        return packet >> rollPacket.playerNumber;
     }
 
     enum class EndType : unsigned char
