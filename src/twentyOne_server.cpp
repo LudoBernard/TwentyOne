@@ -34,17 +34,18 @@ namespace twentyOne
                         ManageRollPacket(rollPacket);
                         break;
                     }
+                    case PacketType::FOLD:
+                    {
+                        FoldPacket foldPacket;
+                        receivedPacket >> foldPacket;
+                        ManageFoldPacket(foldPacket);
+						break;
+                    }
                     }
 
                 }
             }
         }
-    }
-
-    PlayerNumber TwentyOneServer::CheckWinner() const
-    {
-        
-        return 255u;
     }
 
     void TwentyOneServer::ManageRollPacket(const RollPacket& rollPacket)
@@ -54,25 +55,52 @@ namespace twentyOne
         std::uniform_int_distribution<int> distribution(1, 6);
         int roll = distribution(gen);
     	
-        std::cout << "Player " << rollPacket.playerNumber + 1 <<
-            " rolled a " << roll << " !" << '\n';
+        std::cout << "Received packet from player " << rollPacket.playerNumber + 1 <<
+            ". They rolled a " << roll << " !" << '\n';
 
         if (phase_ != TwentyOnePhase::GAME)
             return;
 
-        
+        if (currentDiceIndex_ % 2 != rollPacket.playerNumber)
+        {
+            //TODO return to player an error msg
+            return;
+        }
+
+        currentDiceIndex_++;
+        sum += roll;
+
+    	
         EndType endType = EndType::NONE;
-        //if(currentMoveIndex_ == 9)
-        //{
-        //    //TODO end of game
-        //    endType = EndType::STALEMATE;
-        //}
-        ////TODO check victory condition
-        //PlayerNumber winningPlayer = CheckWinner();
-        //if(winningPlayer != 255u)
-        //{
-        //    endType = winningPlayer ? EndType::WIN_P2 : EndType::WIN_P1;
-        //}
+        
+        if (triggerWinThisRound_ && rollPacket.playerNumber == 0)
+        {
+            endType = EndType::WIN_P1;
+        }
+        else if (triggerWinThisRound_ && rollPacket.playerNumber == 1)
+        {
+            endType = EndType::WIN_P2;
+        }
+    	
+        //TODO check victory condition
+    	if(sum>21 && rollPacket.playerNumber == 0)
+    	{
+            endType = EndType::WIN_P2;
+    	}
+        else if(sum > 21 && rollPacket.playerNumber == 1)
+        {
+            endType = EndType::WIN_P1;
+        }
+        else if(sum == 21 && rollPacket.playerNumber == 0)
+        {
+            endType = EndType::WIN_P1;
+        }
+        else if (sum == 21 && rollPacket.playerNumber == 1)
+        {
+            endType = EndType::WIN_P2;
+        }
+
+    	
         
         RollPacket newRollPacket = rollPacket;
         newRollPacket.packetType = PacketType::ROLL_DIE;
@@ -188,6 +216,71 @@ namespace twentyOne
 
                 }
             }
+        }
+    }
+
+    void TwentyOneServer::ManageFoldPacket(const FoldPacket& foldPacket)
+    {
+        std::cout << "Received packet from player " << foldPacket.playerNumber + 1 <<
+            ". They folded!" << '\n';
+
+        if (phase_ != TwentyOnePhase::GAME)
+            return;
+
+        if (currentDiceIndex_ % 2 != foldPacket.playerNumber)
+        {
+            //TODO return to player an error msg
+            return;
+        }
+
+        currentDiceIndex_++;
+
+        EndType endType = EndType::NONE;
+
+        FoldPacket newFoldPacket = foldPacket;
+        newFoldPacket.packetType = PacketType::FOLD;
+
+        if (triggerWinThisRound_)
+        {
+            endType = EndType::STALEMATE;
+        }
+
+        triggerWinThisRound_ = true;
+
+       
+        //sent new move to all players
+        for (auto& socket : sockets_)
+        {
+            sf::Packet sentPacket;
+            sentPacket << newFoldPacket;
+            sf::Socket::Status sentStatus;
+            do
+            {
+                sentStatus = socket.send(sentPacket);
+            } while (sentStatus == sf::Socket::Partial);
+
+        }
+        //send end of game packet
+        if (endType != EndType::NONE)
+        {
+            EndPacket endPacket{};
+            endPacket.packetType = PacketType::END;
+            endPacket.endType = endType;
+
+            //sent new move to all players
+            for (auto& socket : sockets_)
+            {
+                sf::Packet sentPacket;
+                sentPacket << endPacket;
+                sf::Socket::Status sentStatus;
+                do
+                {
+                    sentStatus = socket.send(sentPacket);
+                } while (sentStatus == sf::Socket::Partial);
+
+            }
+
+            phase_ = TwentyOnePhase::END;
         }
     }
 

@@ -10,6 +10,7 @@ namespace twentyOne
     {
         GAME_INIT,
     	ROLL_DIE,
+    	FOLD,
         END
     };
 
@@ -62,6 +63,21 @@ namespace twentyOne
     inline sf::Packet& operator >>(sf::Packet& packet, RollPacket& rollPacket)
     {
         return packet >> rollPacket.playerNumber >> rollPacket.roll;
+    }
+
+    struct FoldPacket : Packet
+    {
+        PlayerNumber playerNumber;
+    };
+
+    inline sf::Packet& operator <<(sf::Packet& packet, const FoldPacket& foldPacket)
+    {
+        return packet << static_cast<unsigned char>(foldPacket.packetType) << foldPacket.playerNumber;
+    }
+
+    inline sf::Packet& operator >>(sf::Packet& packet, FoldPacket& foldPacket)
+    {
+        return packet >> foldPacket.playerNumber;
     }
 
     enum class EndType : unsigned char

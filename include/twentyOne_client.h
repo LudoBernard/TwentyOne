@@ -25,12 +25,19 @@ namespace twentyOne
         void Destroy() override;
         int GetPlayerNumber() const;
         void SendNewRoll();
+        unsigned char GetDiceIndex() const;
         std::string_view GetEndMessage() const;
+        void SendFold();
+        bool GetFoldedStatus();
+    	void SetFoldedStatus(bool status);
     private:
         sf::TcpSocket socket_;
         TwentyOnePhase phase_ = TwentyOnePhase::CONNECTION;
         std::string endMessage_;
         PlayerNumber playerNumber_ = 255u;
+        int currentDiceIndex_ = 0;
+        int sum = 0;
+        bool isFolded = false;
     };
 
 

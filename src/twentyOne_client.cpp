@@ -54,8 +54,11 @@ namespace twentyOne
                 break;
             RollPacket rollPacket{};
             packet >> rollPacket;
-            std::cout << "Received roll packet from player " <<
-                rollPacket.playerNumber + 1 << ". They rolled a " << rollPacket.roll << " !" << '\n';
+            std::cout << "Player " <<
+                rollPacket.playerNumber + 1 << " rolled a " << rollPacket.roll << " !" << '\n';
+            currentDiceIndex_++;
+            sum += rollPacket.roll;
+            std::cout << "The sum is now: " << sum << "\n";
             break;
         }
         case PacketType::END:
@@ -83,6 +86,18 @@ namespace twentyOne
             default:;
             }
             phase_ = TwentyOnePhase::END;
+            break;
+        }
+        case PacketType::FOLD:
+        {
+            if (phase_ != TwentyOnePhase::GAME)
+                break;
+            FoldPacket foldPacket{};
+            packet >> foldPacket;
+            std::cout << "Player " <<
+                foldPacket.playerNumber + 1 << " folded !" << '\n';
+            currentDiceIndex_++;
+            std::cout << "The sum is still " << sum << "\n";
             break;
         }
         	default:
@@ -139,10 +154,39 @@ namespace twentyOne
         } while (sentStatus == sf::Socket::Partial);
     }
 
+    unsigned char TwentyOneClient::GetDiceIndex() const
+    {
+        return currentDiceIndex_;
+    }
+
 
     std::string_view TwentyOneClient::GetEndMessage() const
     {
         return endMessage_;
+    }
+
+    void TwentyOneClient::SendFold()
+    {
+        FoldPacket foldPacket;
+        foldPacket.packetType = PacketType::FOLD;
+        foldPacket.playerNumber = playerNumber_;
+        sf::Packet packet;
+        packet << foldPacket;
+        sf::Socket::Status sentStatus;
+        do
+        {
+            sentStatus = socket_.send(packet);
+        } while (sentStatus == sf::Socket::Partial);
+    }
+
+    bool TwentyOneClient::GetFoldedStatus()
+    {
+        return isFolded;
+    }
+
+    void TwentyOneClient::SetFoldedStatus(bool status)
+    {
+        isFolded = status;
     }
 
     TwentyOneView::TwentyOneView(TwentyOneClient& client) : client_(client)
@@ -193,7 +237,27 @@ namespace twentyOne
             break;
         }
 
-
+        case TwentyOnePhase::GAME:
+        {
+            const auto playerNumber = client_.GetPlayerNumber();
+            ImGui::Begin("Client");
+            ImGui::Text("You are player %d", playerNumber + 1);
+            ImGui::Text("Try to get 21 or stay under 21!");
+            if (client_.GetDiceIndex() % 2 == playerNumber && client_.GetFoldedStatus() == false)
+            {
+                if (ImGui::Button("Roll die"))
+                {
+                    client_.SendNewRoll();
+                }
+            	if(ImGui::Button("Fold"))
+            	{
+                    client_.SendFold();
+                    client_.SetFoldedStatus(true);
+            	}
+            }
+            ImGui::End();
+            break;
+        }
         	
         case TwentyOnePhase::END:
         {
@@ -202,18 +266,7 @@ namespace twentyOne
             ImGui::End();
             break;
         }
-        case TwentyOnePhase::GAME:
-        {
-            const auto playerNumber = client_.GetPlayerNumber();
-            ImGui::Begin("Client");
-            ImGui::Text("You are player %d", playerNumber+1);
-        	if(ImGui::Button("Roll die"))
-        	{
-                client_.SendNewRoll();
-        	}
-            ImGui::End();
-			break;
-        }
+        
         }
 
 
